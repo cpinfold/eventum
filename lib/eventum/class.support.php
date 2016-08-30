@@ -773,11 +773,9 @@ class Support
             $issue_id = $workflow;
         } else {
             $setup = Setup::get();
-            if ($setup['subject_based_routing']['status'] == 'enabled') {
-                // Look for issue ID in the subject line
-
-                // look for [#XXXX] in the subject line
-                if (preg_match("/\[#(\d+)\]( Note| BLOCKED)*/", $subject, $matches)) {
+            if (($setup['subject_based_routing']['status'] == 'enabled') and
+                (preg_match("/\[#(\d+)\]( Note| BLOCKED)*/", $subject, $matches))) {
+                    // Look for issue ID [#XXXX] in the subject line
                     $should_create_issue = false;
                     $issue_id = $matches[1];
                     if (!Issue::exists($issue_id, false)) {
@@ -785,9 +783,6 @@ class Support
                     } elseif (!empty($matches[2])) {
                         $type = 'note';
                     }
-                } else {
-                    $should_create_issue = true;
-                }
             } else {
                 // - if this email is a reply:
                 if (count($references) > 0) {
@@ -937,12 +932,12 @@ class Support
      * Checks if a message already is downloaded.
      *
      * @param   string $message_id The Message-ID header
-     * @return  boolean
+     * @return  boolean false if not downloaded, otherwise the issue ID.
      */
     public function exists($message_id)
     {
         $sql = 'SELECT
-                    count(*)
+                    sup_iss_id
                 FROM
                     {{%support_email}}
                 WHERE
@@ -954,7 +949,7 @@ class Support
         }
 
         if ($res > 0) {
-            return true;
+            return $res;
         }
 
         return false;
